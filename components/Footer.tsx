@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { handlePhoneClick } from '../constants';
 
 export const Footer: React.FC = () => {
   useEffect(() => {
@@ -28,10 +29,12 @@ export const Footer: React.FC = () => {
                 </p>
             </div>
             <div className="md:text-right">
-                <p className="font-bold text-zinc-400 mb-2">고객센터</p>
+                <p className="font-bold text-zinc-400 mb-2">고객센터 (교육문의)</p>
                 <a 
                   href="tel:15336176" 
-                  className="text-2xl font-bold text-white hover:text-purple-800 transition-colors md:pointer-events-none md:cursor-default md:hover:text-white inline-block"
+                  onClick={handlePhoneClick}
+                  title="PC: 상담신청 페이지 새창 열기 / 모바일: 전화 연결"
+                  className="text-2xl font-bold text-white hover:text-purple-400 transition-colors cursor-pointer inline-block"
                 >
                   1533-6176
                 </a>

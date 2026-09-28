@@ -203,12 +203,10 @@ export const CourseSection: React.FC = () => {
 
               <div className="shrink-0 w-full lg:w-auto text-center lg:text-right">
                 <a
-                  href="#consultation"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById('consultation')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="inline-flex items-center justify-center gap-2 bg-purple-800 hover:bg-purple-700 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg hover:scale-105 text-base w-full lg:w-auto"
+                  href="https://naver.me/Fuzw9Srr"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 bg-purple-800 hover:bg-purple-700 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg hover:scale-105 text-base w-full lg:w-auto cursor-pointer"
                 >
                   과정 문의 및 신청
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -221,12 +219,10 @@ export const CourseSection: React.FC = () => {
         {/* Bottom Consultation CTA */}
         <Reveal className="w-full mt-20 flex justify-center">
           <a
-            href="#consultation"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById('consultation')?.scrollIntoView({ behavior: 'smooth' });
-            }}
-            className="group relative inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-purple-800 to-purple-900 text-white font-black text-lg md:text-xl px-10 py-4 rounded-full shadow-[0_0_30px_rgba(107,33,168,0.4)] hover:shadow-[0_0_50px_rgba(107,33,168,0.6)] hover:scale-105 transition-all duration-300"
+            href="https://naver.me/Fuzw9Srr"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group relative inline-flex items-center justify-center gap-2.5 bg-gradient-to-r from-purple-800 to-purple-900 text-white font-black text-lg md:text-xl px-10 py-4 rounded-full shadow-[0_0_30px_rgba(107,33,168,0.4)] hover:shadow-[0_0_50px_rgba(107,33,168,0.6)] hover:scale-105 transition-all duration-300 cursor-pointer"
           >
             <span className="absolute inset-0 rounded-full bg-white/20 animate-ping" style={{ animationDuration: '2s' }}></span>
             상담신청하기

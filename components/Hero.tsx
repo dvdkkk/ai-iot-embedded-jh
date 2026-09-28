@@ -64,12 +64,10 @@ export const Hero: React.FC = () => {
           {/* CTA Buttons / Quick Actions */}
           <div className="flex flex-wrap gap-4 mb-12">
             <a 
-              href="#consultation" 
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById('consultation')?.scrollIntoView({ behavior: 'smooth' });
-              }}
-              className="bg-purple-800 text-white font-bold px-8 py-4 rounded-xl hover:bg-purple-700 transition-all shadow-[0_0_25px_rgba(107,33,168,0.4)] hover:scale-105 text-base flex items-center gap-2"
+              href="https://naver.me/Fuzw9Srr" 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-purple-800 text-white font-bold px-8 py-4 rounded-xl hover:bg-purple-700 transition-all shadow-[0_0_25px_rgba(107,33,168,0.4)] hover:scale-105 text-base flex items-center gap-2 cursor-pointer"
             >
               무료 상담 신청하기
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>

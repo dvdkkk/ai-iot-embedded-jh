@@ -67,3 +67,21 @@ export const TARGET_AUDIENCE = [
   "실무 중심의 포트폴리오를 완성하여 고연봉 취업을 원하는 분",
   "최신 AI 트렌드를 배우고 현업에 바로 투입되고 싶은 구직자"
 ];
+
+export const NAVER_CONSULTATION_URL = 'https://naver.me/Fuzw9Srr';
+export const INQUIRY_PHONE_NUMBER = '1533-6176';
+
+/**
+ * PC 환경에서 전화번호를 클릭하면 상담신청 주소로 새창을 띄워주고,
+ * 모바일 환경에서 전화번호를 클릭하면 전화로 연결되도록 처리하는 핸들러
+ */
+export const handlePhoneClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const isMobile = 
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (window.innerWidth < 768 && ('ontouchstart' in window || navigator.maxTouchPoints > 0));
+
+  if (!isMobile) {
+    e.preventDefault();
+    window.open(NAVER_CONSULTATION_URL, '_blank', 'noopener,noreferrer');
+  }
+};

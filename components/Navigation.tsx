@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Menu, X, PhoneCall } from 'lucide-react';
+import { NAVER_CONSULTATION_URL, handlePhoneClick } from '../constants';
 
 export const Navigation: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -57,27 +58,34 @@ export const Navigation: React.FC = () => {
 
         {/* Desktop Menu */}
         <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
-          {navLinks.map((link) => (
-            <a 
-              key={link.name} 
-              href={link.href} 
-              onClick={(e) => handleNavClick(e, link.href)}
-              className={`text-lg font-medium transition-colors ${
-                link.name === '상담신청' 
-                  ? 'text-purple-800 font-bold' 
-                  : 'text-gray-300 hover:text-purple-800'
-              }`}
-            >
-              {link.name}
-            </a>
-          ))}
+          {navLinks.map((link) => {
+            const isConsultation = link.name === '상담신청';
+            return (
+              <a 
+                key={link.name} 
+                href={isConsultation ? NAVER_CONSULTATION_URL : link.href} 
+                target={isConsultation ? "_blank" : undefined}
+                rel={isConsultation ? "noopener noreferrer" : undefined}
+                onClick={(e) => {
+                  if (!isConsultation) {
+                    handleNavClick(e, link.href);
+                  }
+                }}
+                className={`text-lg font-medium transition-colors ${
+                  isConsultation 
+                    ? 'text-purple-800 font-bold hover:text-purple-600' 
+                    : 'text-gray-300 hover:text-purple-800'
+                }`}
+              >
+                {link.name}
+              </a>
+            );
+          })}
           <a 
             href="tel:15336176" 
-            onClick={(e) => {
-              const isPc = window.innerWidth >= 1024;
-              if (isPc) handleNavClick(e, '#consultation');
-            }}
-            className="flex items-center gap-2 bg-purple-800 text-black px-5 py-2 rounded-full font-bold text-lg hover:bg-purple-700 transition-transform hover:scale-105"
+            onClick={handlePhoneClick}
+            title="PC: 상담신청 페이지 새창 열기 / 모바일: 전화 연결"
+            className="flex items-center gap-2 bg-purple-800 text-black px-5 py-2 rounded-full font-bold text-lg hover:bg-purple-700 transition-transform hover:scale-105 cursor-pointer"
           >
             <PhoneCall size={20} />
             1533-6176
@@ -93,24 +101,36 @@ export const Navigation: React.FC = () => {
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="lg:hidden absolute top-full left-0 w-full bg-zinc-900 border-b border-zinc-800 p-4 flex flex-col space-y-4 shadow-2xl">
-          {navLinks.map((link) => (
-            <a 
-              key={link.name} 
-              href={link.href} 
-              className={`text-base font-medium py-2 border-b border-zinc-800 ${
-                link.name === '상담신청' 
-                  ? 'text-purple-800 font-bold' 
-                  : 'text-gray-300 hover:text-purple-800'
-              }`}
-              onClick={(e) => handleNavClick(e, link.href)}
-            >
-              {link.name}
-            </a>
-          ))}
+          {navLinks.map((link) => {
+            const isConsultation = link.name === '상담신청';
+            return (
+              <a 
+                key={link.name} 
+                href={isConsultation ? NAVER_CONSULTATION_URL : link.href} 
+                target={isConsultation ? "_blank" : undefined}
+                rel={isConsultation ? "noopener noreferrer" : undefined}
+                className={`text-base font-medium py-2 border-b border-zinc-800 ${
+                  isConsultation 
+                    ? 'text-purple-800 font-bold' 
+                    : 'text-gray-300 hover:text-purple-800'
+                }`}
+                onClick={(e) => {
+                  setIsMobileMenuOpen(false);
+                  if (!isConsultation) {
+                    handleNavClick(e, link.href);
+                  }
+                }}
+              >
+                {link.name}
+              </a>
+            );
+          })}
           <a 
-            href="#consultation" 
-            className="bg-purple-800 text-black text-center py-3 rounded-md font-bold text-sm"
-            onClick={(e) => handleNavClick(e, '#consultation')}
+            href={NAVER_CONSULTATION_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-purple-800 text-white text-center py-3 rounded-md font-bold text-sm block"
+            onClick={() => setIsMobileMenuOpen(false)}
           >
             무료상담 신청하기
           </a>
