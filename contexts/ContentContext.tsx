@@ -10,7 +10,7 @@ const defaultContent: SiteContent = {
     highlight: "AI사물인터넷 MCU기반\n임베디드 펌웨어 전문가로",
     description: "온 디바이스AI, 스마트팩토리, 스마트팜 등에 활용되는 Cortex-M4/Mx ARM MCU 기반 임베디드/펌웨어 실무 교육 과정입니다. 한국직업능력교육원에서 임베디드 전문가로 거듭나세요.",
     stats: [
-      { label: '교육기간', value: '26.10.28개강(6개월과정)' },
+      { label: '교육기간', value: '26.12.21개강(6개월과정)' },
       { label: '교육시간', value: '월~금 09:00~17:40' },
       { label: '수강료', value: '95~100% 국비지원' },
       { label: '수업형태', value: '오프라인 수업' },
@@ -83,24 +83,98 @@ interface ContentContextType {
 
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'site_content_v11';
+const STORAGE_KEY = 'site_content_v12';
+export const SHEET_ASSET_URL = '/assets/aistudio/_______________bdb6642d';
+
+/**
+ * 시트(CSV)에서 D4 셀의 값을 파싱하는 함수
+ * D4 = 4행 (0-indexed 3), 4열 D열 (0-indexed 3)
+ */
+export function parseCellD4(csvText: string): string | null {
+  if (!csvText) return null;
+  const lines = csvText.split(/\r?\n/);
+  if (lines.length >= 4) {
+    const row4 = lines[3];
+    const cols: string[] = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < row4.length; i++) {
+      const char = row4[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        cols.push(cur.trim());
+        cur = '';
+      } else {
+        cur += char;
+      }
+    }
+    cols.push(cur.trim());
+    if (cols.length >= 4 && cols[3]) {
+      return cols[3].replace(/^"|"$/g, '').trim();
+    }
+  }
+  return null;
+}
 
 export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [content, setContent] = useState<SiteContent>(defaultContent);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    let initialContent = defaultContent;
     const savedContent = localStorage.getItem(STORAGE_KEY);
     if (savedContent) {
       try {
         const parsed = JSON.parse(savedContent);
-        setContent({ ...defaultContent, ...parsed });
+        // 교육기간은 시트의 최신 D4 값과 동기화되도록 유지
+        const stats = defaultContent.hero.stats.map(defaultStat => {
+          if (defaultStat.label === '교육기간') return defaultStat;
+          const found = parsed.hero?.stats?.find((s: any) => s.label === defaultStat.label);
+          return found || defaultStat;
+        });
+        initialContent = {
+          ...defaultContent,
+          ...parsed,
+          hero: {
+            ...defaultContent.hero,
+            ...(parsed.hero || {}),
+            stats
+          }
+        };
       } catch (e) {
         console.error("Failed to load content", e);
       }
     }
 
+    setContent(initialContent);
     setIsLoaded(true);
+
+    // 페이지 접속 또는 새로고침 시 시트 파일에서 D4 셀 값을 실시간으로 읽어와 교육기간에 반영
+    const syncD4FromSheet = async () => {
+      try {
+        const res = await fetch(`${SHEET_ASSET_URL}?t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const csvText = await res.text();
+          const d4Value = parseCellD4(csvText);
+          if (d4Value) {
+            setContent(prev => ({
+              ...prev,
+              hero: {
+                ...prev.hero,
+                stats: prev.hero.stats.map(s => 
+                  s.label === '교육기간' ? { ...s, value: d4Value } : s
+                )
+              }
+            }));
+          }
+        }
+      } catch (err) {
+        console.error("시트 D4 값 불러오기 실패:", err);
+      }
+    };
+
+    syncD4FromSheet();
   }, []);
 
   const updateContent = (newContent: SiteContent) => {
