@@ -10,7 +10,7 @@ const defaultContent: SiteContent = {
     highlight: "AI사물인터넷 MCU기반\n임베디드 펌웨어 전문가로",
     description: "온 디바이스AI, 스마트팩토리, 스마트팜 등에 활용되는 Cortex-M4/Mx ARM MCU 기반 임베디드/펌웨어 실무 교육 과정입니다. 한국직업능력교육원에서 임베디드 전문가로 거듭나세요.",
     stats: [
-      { label: '교육기간', value: '26.12.22개강(6개월과정)' },
+      { label: '교육기간', value: '26.12.26개강(6개월과정)' },
       { label: '교육시간', value: '월~금 09:00~17:40' },
       { label: '수강료', value: '95~100% 국비지원' },
       { label: '수업형태', value: '오프라인 수업' },
@@ -83,38 +83,95 @@ interface ContentContextType {
 
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'site_content_v13';
+const STORAGE_KEY = 'site_content_v14';
 export const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzLxHiDq6F7MLg8ieg3CaVCAxZY1evEPiJN2Tn24LY2Xgv3g8cZJwrG4nnwLEExn1CD_bzRUZVh4UA/pub?output=csv';
 export const LOCAL_SHEET_FALLBACK_URL = '/assets/aistudio/_______________bdb6642d';
 
 /**
- * 시트(CSV)에서 '시트1'의 D4 셀 값을 파싱하는 함수
- * D4 = 4번째 행 (0-indexed 3), 4번째 열 D열 (0-indexed 3)
+ * RFC 4180 규격을 충실히 따르는 정밀 CSV 파서
+ * 쉼표(,), 따옴표("), 따옴표 내부의 쉼표/줄바꿈, 이스케이프 따옴표("")를 정밀하게 파싱
+ */
+export function parseCSV(csvText: string): string[][] {
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentCell = '';
+  let insideQuotes = false;
+
+  for (let i = 0; i < csvText.length; i++) {
+    const char = csvText[i];
+    const nextChar = csvText[i + 1];
+
+    if (insideQuotes) {
+      if (char === '"') {
+        if (nextChar === '"') {
+          currentCell += '"';
+          i++; // 이스케이프된 따옴표 스킵
+        } else {
+          insideQuotes = false;
+        }
+      } else {
+        currentCell += char;
+      }
+    } else {
+      if (char === '"') {
+        insideQuotes = true;
+      } else if (char === ',') {
+        currentRow.push(currentCell.trim());
+        currentCell = '';
+      } else if (char === '\r') {
+        if (nextChar === '\n') {
+          i++;
+        }
+        currentRow.push(currentCell.trim());
+        rows.push(currentRow);
+        currentRow = [];
+        currentCell = '';
+      } else if (char === '\n') {
+        currentRow.push(currentCell.trim());
+        rows.push(currentRow);
+        currentRow = [];
+        currentCell = '';
+      } else {
+        currentCell += char;
+      }
+    }
+  }
+
+  if (currentCell.length > 0 || currentRow.length > 0) {
+    currentRow.push(currentCell.trim());
+    rows.push(currentRow);
+  }
+
+  return rows;
+}
+
+/**
+ * '시트1'의 D4 셀 값 추출:
+ * 쉼표(,) 및 따옴표를 정밀하게 파싱하여 4번째 행, D열(4번째 열)인 D4 셀값을 추출합니다.
  */
 export function parseCellD4(csvText: string): string | null {
   if (!csvText) return null;
-  const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
-  if (lines.length >= 4) {
-    const row4 = lines[3];
-    const cols: string[] = [];
-    let cur = '';
-    let inQuotes = false;
-    for (let i = 0; i < row4.length; i++) {
-      const char = row4[i];
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        cols.push(cur.trim());
-        cur = '';
-      } else {
-        cur += char;
-      }
-    }
-    cols.push(cur.trim());
-    if (cols.length >= 4 && cols[3]) {
-      return cols[3].replace(/^"|"$/g, '').trim();
+  const rows = parseCSV(csvText);
+
+  // 4번째 행 (0-indexed 3), D열(4번째 열, 0-indexed 3)
+  if (rows.length >= 4 && rows[3].length >= 4) {
+    const val = rows[3][3];
+    if (val && val.length > 0) {
+      return val;
     }
   }
+
+  // 행 밀림 방지 예비 로직: '한직교' 또는 'AI사물인터넷'이 포함된 행의 개강일 열 추출
+  const matchingRow = rows.find(row => 
+    row.some(cell => cell.includes('한직교') || cell.includes('AI사물인터넷') || cell.includes('임베디드'))
+  );
+  if (matchingRow && matchingRow.length >= 4) {
+    const val = matchingRow[3];
+    if (val && val.length > 0) {
+      return val;
+    }
+  }
+
   return null;
 }
 
@@ -128,7 +185,7 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (savedContent) {
       try {
         const parsed = JSON.parse(savedContent);
-        // 교육기간은 구글 스프레드시트의 최신 D4 값과 실시간 동기화되도록 기본값 또는 시트값 유지
+        // 교육기간은 구글 스프레드시트의 최신 D4 값과 실시간 동기화되도록 유지
         const stats = defaultContent.hero.stats.map(defaultStat => {
           if (defaultStat.label === '교육기간') return defaultStat;
           const found = parsed.hero?.stats?.find((s: any) => s.label === defaultStat.label);
@@ -151,10 +208,9 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
     setContent(initialContent);
     setIsLoaded(true);
 
-    // 페이지 접속 또는 새로고침 시 구글 스프레드시트 '시트1'의 D4 셀 값을 실시간으로 읽어와 교육기간에 반영
+    // 페이지 첫 방문 또는 새로고침(F5) 시 브라우저 캐시 우회(타임스탬프 &_t=Date.now(), cache: 'no-store')로 구글 시트 최신 D4 셀값 실시간 동기화
     const syncD4FromSheet = async () => {
       try {
-        // 1차: 실시간 구글 스프레드시트 CSV fetch (타임스탬프 쿼리로 브라우저/CDN 캐시 우회)
         const cacheBuster = `&_t=${Date.now()}`;
         const res = await fetch(`${GOOGLE_SHEET_CSV_URL}${cacheBuster}`, { cache: 'no-store' });
         if (res.ok) {
