@@ -10,7 +10,7 @@ const defaultContent: SiteContent = {
     highlight: "AI사물인터넷 MCU기반\n임베디드 펌웨어 전문가로",
     description: "온 디바이스AI, 스마트팩토리, 스마트팜 등에 활용되는 Cortex-M4/Mx ARM MCU 기반 임베디드/펌웨어 실무 교육 과정입니다. 한국직업능력교육원에서 임베디드 전문가로 거듭나세요.",
     stats: [
-      { label: '교육기간', value: '26.12.21개강(6개월과정)' },
+      { label: '교육기간', value: '26.12.22개강(6개월과정)' },
       { label: '교육시간', value: '월~금 09:00~17:40' },
       { label: '수강료', value: '95~100% 국비지원' },
       { label: '수업형태', value: '오프라인 수업' },
@@ -83,16 +83,17 @@ interface ContentContextType {
 
 const ContentContext = createContext<ContentContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'site_content_v12';
-export const SHEET_ASSET_URL = '/assets/aistudio/_______________bdb6642d';
+const STORAGE_KEY = 'site_content_v13';
+export const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRzLxHiDq6F7MLg8ieg3CaVCAxZY1evEPiJN2Tn24LY2Xgv3g8cZJwrG4nnwLEExn1CD_bzRUZVh4UA/pub?output=csv';
+export const LOCAL_SHEET_FALLBACK_URL = '/assets/aistudio/_______________bdb6642d';
 
 /**
- * 시트(CSV)에서 D4 셀의 값을 파싱하는 함수
- * D4 = 4행 (0-indexed 3), 4열 D열 (0-indexed 3)
+ * 시트(CSV)에서 '시트1'의 D4 셀 값을 파싱하는 함수
+ * D4 = 4번째 행 (0-indexed 3), 4번째 열 D열 (0-indexed 3)
  */
 export function parseCellD4(csvText: string): string | null {
   if (!csvText) return null;
-  const lines = csvText.split(/\r?\n/);
+  const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
   if (lines.length >= 4) {
     const row4 = lines[3];
     const cols: string[] = [];
@@ -127,7 +128,7 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (savedContent) {
       try {
         const parsed = JSON.parse(savedContent);
-        // 교육기간은 시트의 최신 D4 값과 동기화되도록 유지
+        // 교육기간은 구글 스프레드시트의 최신 D4 값과 실시간 동기화되도록 기본값 또는 시트값 유지
         const stats = defaultContent.hero.stats.map(defaultStat => {
           if (defaultStat.label === '교육기간') return defaultStat;
           const found = parsed.hero?.stats?.find((s: any) => s.label === defaultStat.label);
@@ -150,10 +151,12 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
     setContent(initialContent);
     setIsLoaded(true);
 
-    // 페이지 접속 또는 새로고침 시 시트 파일에서 D4 셀 값을 실시간으로 읽어와 교육기간에 반영
+    // 페이지 접속 또는 새로고침 시 구글 스프레드시트 '시트1'의 D4 셀 값을 실시간으로 읽어와 교육기간에 반영
     const syncD4FromSheet = async () => {
       try {
-        const res = await fetch(`${SHEET_ASSET_URL}?t=${Date.now()}`, { cache: 'no-store' });
+        // 1차: 실시간 구글 스프레드시트 CSV fetch (타임스탬프 쿼리로 브라우저/CDN 캐시 우회)
+        const cacheBuster = `&_t=${Date.now()}`;
+        const res = await fetch(`${GOOGLE_SHEET_CSV_URL}${cacheBuster}`, { cache: 'no-store' });
         if (res.ok) {
           const csvText = await res.text();
           const d4Value = parseCellD4(csvText);
@@ -167,10 +170,33 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
                 )
               }
             }));
+            return;
           }
         }
       } catch (err) {
-        console.error("시트 D4 값 불러오기 실패:", err);
+        console.warn("구글 스프레드시트 실시간 조회 실패, 로컬 백업 시도:", err);
+      }
+
+      // 오프라인이나 네트워크 차단 시 로컬 백업 파일에서 조회
+      try {
+        const fallbackRes = await fetch(`${LOCAL_SHEET_FALLBACK_URL}?t=${Date.now()}`, { cache: 'no-store' });
+        if (fallbackRes.ok) {
+          const csvText = await fallbackRes.text();
+          const d4Value = parseCellD4(csvText);
+          if (d4Value) {
+            setContent(prev => ({
+              ...prev,
+              hero: {
+                ...prev.hero,
+                stats: prev.hero.stats.map(s => 
+                  s.label === '교육기간' ? { ...s, value: d4Value } : s
+                )
+              }
+            }));
+          }
+        }
+      } catch (fallbackErr) {
+        console.error("로컬 백업 시트 조회 실패:", fallbackErr);
       }
     };
 
